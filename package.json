@@ -1,0 +1,22 @@
+{
+  "name": "hourly",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Hourly — cross-platform time tracking with activity proof",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:desktop": "npm run dev -w @hourly/desktop",
+    "dev:dashboard": "npm run dev -w @hourly/dashboard",
+    "build:desktop": "npm run build -w @hourly/desktop",
+    "build:dashboard": "npm run build -w @hourly/dashboard",
+    "build": "npm run build -w @hourly/shared && npm run build:dashboard && npm run build:desktop",
+    "migrate": "bash scripts/migrate.sh",
+    "seed:users": "node scripts/seed-users.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

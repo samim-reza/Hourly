@@ -1,0 +1,32 @@
+# Dependencies
+node_modules
+**/node_modules
+
+# Build outputs
+apps/desktop/out
+apps/desktop/release
+apps/dashboard/.next
+packages/shared/dist
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+
+# Git & IDE
+.git
+.gitignore
+.cursor
+
+# Desktop app (not deployed to VPS)
+apps/desktop
+
+# Docs & misc
+README.md
+*.md
+supabase
+scripts
+
+# OS
+.DS_Store
+Thumbs.db
