@@ -17,7 +17,7 @@ export function ScreenshotsGallery({ screenshots }: ScreenshotsGalleryProps) {
     <div className="rounded-xl border border-parrot-200 bg-white shadow-sm">
       <div className="border-b border-parrot-100 px-5 py-4">
         <h2 className="font-semibold text-parrot-900">Screenshots</h2>
-        <p className="mt-0.5 text-xs text-parrot-500">Captured every ~10 min while tracking</p>
+        <p className="mt-0.5 text-xs text-parrot-500">Captured every 4–9 min (random) while tracking</p>
       </div>
 
       {screenshots.length === 0 ? (

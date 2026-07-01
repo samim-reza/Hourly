@@ -6,6 +6,7 @@ import { TimeEntriesTable } from '@/components/TimeEntriesTable';
 import { ScreenshotsGallery } from '@/components/ScreenshotsGallery';
 import { WeeklyTimesheet } from '@/components/WeeklyTimesheet';
 import type { Profile } from '@hourly/shared';
+import { withSignedScreenshotUrls } from '@/lib/screenshots';
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -84,12 +85,7 @@ export default async function DashboardPage() {
   const totalHours = totalSeconds / 3600;
   const earnings = totalHours * Number(hourlyRate);
 
-  const screenshotUrls = await Promise.all(
-    screenshots.map(async (s) => {
-      const { data } = await supabase.storage.from('screenshots').createSignedUrl(s.storage_path, 3600);
-      return { ...s, url: data?.signedUrl ?? null };
-    }),
-  );
+  const screenshotUrls = await withSignedScreenshotUrls(screenshots, supabase);
 
   return (
     <div className="min-h-screen bg-parrot-50">

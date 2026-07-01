@@ -196,7 +196,7 @@ export default function App() {
         </div>
 
         <p className="text-center text-[11px] text-parrot-500">
-          Screenshots every 10 min · Activity counts only (no keylogging)
+          Screenshots every 4–9 min (random) · Activity counts only (no keylogging)
         </p>
       </main>
     </div>

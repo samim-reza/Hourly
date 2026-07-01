@@ -1,0 +1,10 @@
+sudo ./scripts/save-image.sh
+
+scp ~/Code/Hourly/hourly-app.tar root@165.22.3.200:~/Hourly/
+
+./deploy.sh --load-image
+
+cd ~/Code/Hourly
+npm install
+npm run build -w @hourly/shared
+npm run dist -w @hourly/desktop

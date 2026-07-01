@@ -15,13 +15,14 @@ import { writeFile, mkdir, readFile } from 'fs/promises';
 import { existsSync } from 'fs';
 
 const IDLE_THRESHOLD_SECONDS = 300; // 5 min auto-pause
-const SCREENSHOT_INTERVAL_MS = 10 * 60 * 1000; // 10 min
+const SCREENSHOT_MIN_MS = 4 * 60 * 1000; // 4 min
+const SCREENSHOT_MAX_MS = 9 * 60 * 1000; // 9 min
 const ACTIVITY_INTERVAL_MS = 60 * 1000; // 1 min activity snapshots
 const MAX_EVENTS_PER_MINUTE = 120; // baseline for 100% activity
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
-let screenshotTimer: ReturnType<typeof setInterval> | null = null;
+let screenshotTimer: ReturnType<typeof setTimeout> | null = null;
 let activityTimer: ReturnType<typeof setInterval> | null = null;
 let idleCheckTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -161,16 +162,28 @@ async function captureScreenshot(): Promise<string | null> {
   }
 }
 
+function randomScreenshotDelayMs(): number {
+  const span = SCREENSHOT_MAX_MS - SCREENSHOT_MIN_MS;
+  return SCREENSHOT_MIN_MS + Math.random() * span;
+}
+
+function scheduleNextScreenshot(): void {
+  if (!trackingActive) return;
+  screenshotTimer = setTimeout(async () => {
+    if (!trackingActive) return;
+    const path = await captureScreenshot();
+    if (path) mainWindow?.webContents.send('tracker:screenshot', path);
+    scheduleNextScreenshot();
+  }, randomScreenshotDelayMs());
+}
+
 function startTracking(): void {
   if (trackingActive) return;
   trackingActive = true;
   keysCount = 0;
   clicksCount = 0;
 
-  screenshotTimer = setInterval(async () => {
-    const path = await captureScreenshot();
-    if (path) mainWindow?.webContents.send('tracker:screenshot', path);
-  }, SCREENSHOT_INTERVAL_MS);
+  scheduleNextScreenshot();
 
   activityTimer = setInterval(() => {
     const idleSeconds = powerMonitor.getSystemIdleTime();
@@ -203,7 +216,7 @@ function startTracking(): void {
 
 function stopTracking(): void {
   trackingActive = false;
-  if (screenshotTimer) clearInterval(screenshotTimer);
+  if (screenshotTimer) clearTimeout(screenshotTimer);
   if (activityTimer) clearInterval(activityTimer);
   if (idleCheckTimer) clearInterval(idleCheckTimer);
   screenshotTimer = null;
