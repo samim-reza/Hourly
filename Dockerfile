@@ -32,6 +32,8 @@ COPY --from=deps /app/package-lock.json ./package-lock.json
 COPY packages/shared ./packages/shared
 COPY apps/dashboard ./apps/dashboard
 
+RUN mkdir -p apps/dashboard/public
+
 ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
 ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
