@@ -74,10 +74,24 @@ fi
 
 if [[ $LOAD_IMAGE -eq 1 ]]; then
   if [[ ! -f hourly-app.tar ]]; then
-    echo "Error: hourly-app.tar not found. Run ./scripts/build-image.sh on your PC first."
+    echo "Error: hourly-app.tar not found. Run ./scripts/save-image.sh on your PC first."
     exit 1
   fi
-  echo "==> docker load -i hourly-app.tar"
+  if [[ ! -s hourly-app.tar ]]; then
+    echo "Error: hourly-app.tar is empty — re-copy from your PC"
+    exit 1
+  fi
+  if ! tar tf hourly-app.tar manifest.json &>/dev/null; then
+    echo "Error: hourly-app.tar is not a valid docker-archive (corrupt or wrong format)."
+    echo "  file hourly-app.tar → $(file -b hourly-app.tar 2>/dev/null || echo unknown)"
+    echo "  size: $(ls -lh hourly-app.tar | awk '{print $5}')"
+    echo ""
+    echo "On your PC, re-save and re-copy:"
+    echo "  cd ~/Code/Hourly && sudo ./scripts/save-image.sh"
+    echo "  scp hourly-app.tar root@165.22.3.200:~/Hourly/"
+    exit 1
+  fi
+  echo "==> docker load -i hourly-app.tar ($(ls -lh hourly-app.tar | awk '{print $5}'))"
   docker load -i hourly-app.tar
   echo "==> docker compose -f docker-compose.prod.yml up -d"
   docker compose -f docker-compose.prod.yml up -d

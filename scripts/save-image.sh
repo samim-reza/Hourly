@@ -21,6 +21,26 @@ docker_cmd() {
   fi
 }
 
+validate_tar() {
+  local f="$1"
+  if [[ ! -s "$f" ]]; then
+    echo "Error: archive is empty"
+    return 1
+  fi
+  # Reject text/corrupt files (e.g. warnings captured in redirect)
+  if head -c 64 "$f" | grep -qE '^(Error|WARN|WARNING|permission|docker:)'; then
+    echo "Error: archive contains text, not image data:"
+    head -3 "$f"
+    return 1
+  fi
+  if tar tf "$f" manifest.json &>/dev/null; then
+    return 0
+  fi
+  echo "Error: missing manifest.json — use docker-archive format (re-run this script)"
+  file "$f"
+  return 1
+}
+
 if ! docker_cmd image inspect hourly-app:latest >/dev/null 2>&1; then
   echo "Error: image 'hourly-app:latest' not found."
   echo "Build first: ./scripts/build-image.sh"
@@ -28,14 +48,16 @@ if ! docker_cmd image inspect hourly-app:latest >/dev/null 2>&1; then
 fi
 
 echo "==> Saving hourly-app:latest → ${OUT}"
-# Snap Docker often fails with -o; stdout redirect works reliably
-if ! docker_cmd save hourly-app:latest > "$TMP"; then
-  echo "Error: docker save failed"
-  exit 1
+# docker-archive = compatible with older VPS Docker; stderr must not pollute stdout
+if ! docker_cmd save --format docker-archive hourly-app:latest > "$TMP" 2>/dev/null; then
+  echo "Trying without --format flag..."
+  if ! docker_cmd save hourly-app:latest > "$TMP" 2>/dev/null; then
+    echo "Error: docker save failed"
+    exit 1
+  fi
 fi
 
-if [[ ! -s "$TMP" ]]; then
-  echo "Error: docker save produced an empty file"
+if ! validate_tar "$TMP"; then
   exit 1
 fi
 
@@ -49,6 +71,9 @@ fi
 
 chmod 644 "$OUT"
 ls -lh "$OUT"
+echo "SHA256: $(sha256sum "$OUT" | awk '{print $1}')"
 echo ""
 echo "Copy to VPS:"
 echo "  scp ${OUT} root@165.22.3.200:~/Hourly/"
+echo "On VPS verify size/checksum matches, then:"
+echo "  ./deploy.sh --load-image"

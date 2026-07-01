@@ -62,12 +62,11 @@ docker build \
 
 TMP_OUT="${ROOT}/.hourly-app-save-$$.tar"
 echo "==> Saving image to ${OUT}"
-if ! docker save hourly-app:latest > "$TMP_OUT"; then
-  echo "Error: docker save failed"
-  exit 1
+if ! docker save --format docker-archive hourly-app:latest > "$TMP_OUT" 2>/dev/null; then
+  docker save hourly-app:latest > "$TMP_OUT" 2>/dev/null
 fi
-if [[ ! -s "$TMP_OUT" ]]; then
-  echo "Error: docker save produced an empty file"
+if [[ ! -s "$TMP_OUT" ]] || ! tar tf "$TMP_OUT" manifest.json &>/dev/null; then
+  echo "Error: docker save produced invalid archive"
   exit 1
 fi
 mv -f "$TMP_OUT" "$OUT"
