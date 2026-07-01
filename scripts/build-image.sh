@@ -1,11 +1,27 @@
 #!/usr/bin/env bash
 # Build Hourly dashboard image on your PC (needs ~2GB RAM free).
 # Then copy hourly-app.tar to the VPS and run: ./deploy.sh --load-image
+#
+# Do NOT use sudo — add your user to docker: sudo usermod -aG docker $USER
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 OUT="${ROOT}/hourly-app.tar"
+
+if [[ -n "${SUDO_USER:-}" ]]; then
+  echo "Warning: running via sudo — image will be saved to /tmp first."
+  OWNER="${SUDO_USER}:${SUDO_USER}"
+else
+  OWNER=""
+fi
+
+if ! docker info >/dev/null 2>&1; then
+  echo "Error: cannot access Docker."
+  echo "  Fix: sudo usermod -aG docker \$USER && newgrp docker"
+  echo "  Do not run this script with sudo."
+  exit 1
+fi
 
 load_env() {
   local key value
@@ -34,7 +50,7 @@ if [[ -z "$NEXT_PUBLIC_SUPABASE_URL" || -z "$NEXT_PUBLIC_SUPABASE_ANON_KEY" ]]; 
   exit 1
 fi
 
-echo "==> Building hourly-app:latest (this needs RAM — run on your Ubuntu PC, not the VPS)"
+echo "==> Building hourly-app:latest"
 export DOCKER_BUILDKIT=1
 
 docker build \
@@ -44,12 +60,23 @@ docker build \
   -f Dockerfile \
   .
 
+TMP_OUT="${ROOT}/.hourly-app-save-$$.tar"
 echo "==> Saving image to ${OUT}"
-docker save hourly-app:latest -o "$OUT"
+if ! docker save hourly-app:latest > "$TMP_OUT"; then
+  echo "Error: docker save failed"
+  exit 1
+fi
+if [[ ! -s "$TMP_OUT" ]]; then
+  echo "Error: docker save produced an empty file"
+  exit 1
+fi
+mv -f "$TMP_OUT" "$OUT"
+[[ -n "$OWNER" ]] && chown "$OWNER" "$OUT"
+chmod 644 "$OUT"
 ls -lh "$OUT"
 
 echo ""
 echo "Copy to VPS:"
-echo "  scp hourly-app.tar user@your-vps:~/Hourly/"
+echo "  scp ${OUT} root@165.22.3.200:~/Hourly/"
 echo "On VPS:"
 echo "  cd ~/Hourly && ./deploy.sh --load-image"
