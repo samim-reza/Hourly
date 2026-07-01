@@ -1,0 +1,22 @@
+# Use pre-built image only — no compile on VPS.
+# Load image first: docker load -i hourly-app.tar
+services:
+  hourly-app:
+    container_name: hourly-app
+    image: hourly-app:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PORT: 8001
+      HOSTNAME: 0.0.0.0
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+    expose:
+      - "8001"
+    networks:
+      - web
+
+networks:
+  web:
+    external: true
+    name: web
